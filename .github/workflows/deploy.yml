@@ -23,6 +23,8 @@ jobs:
 
       # Step 3: Deploy all functions found inside the supabase/functions/ directory
       - name: Deploy Functions
-        run: supabase functions deploy --all --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: supabase functions deploy --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+        
