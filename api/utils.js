@@ -1,7 +1,7 @@
 // ==========================================
 // LOW-LATENCY GROQ INFERENCE ENGINE
 // ==========================================
-
+const GROQ_API_KEY = process.env.GROQ_API_KEY
 export async function getResponseFromGroq(
   messages,
   model = "llama-3.1-8b-instant",
