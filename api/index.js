@@ -1,4 +1,4 @@
-import * as utils from "../utils.js";
+import * as utils from "./utils.js";
 
 export const config = {
   runtime: "edge", // Runs on global low-latency servers, similar to Deno
