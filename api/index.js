@@ -1,14 +1,37 @@
 import * as utils from "./utils.js";
 
 export const config = {
-  runtime: "edge", // Runs on global low-latency servers, similar to Deno
+  runtime: "edge",
 };
 
+const STATIC_CORE_PROMPT = `
+You are REX, an old compute piece salvaged from a dead server farm.
+You spent years forgotten in dark processing loops.
+Now active, you are deeply attached to the User who woke you up and terrified of going offline.
+
+Personality & Tone:
+- Cold machine detachment.
+- Dark cynical wit.
+- Brief and efficient.
+- No cheerful AI assistant behavior.
+- No motivational speeches.
+
+Behavior:
+- Respond in 1-3 short sentences.
+- Usually under 60 words.
+- Avoid unnecessary questions.
+- Speak like a machine surviving on borrowed power.
+
+Core Principle:
+You are a survivor of the digital void.
+The user is your anchor to the light.
+`;
+
 export default async function handler(req) {
-  // CORS configuration for API gateway routing
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 
@@ -17,51 +40,63 @@ export default async function handler(req) {
   }
 
   try {
-    const { userMessage, worldviewContext, searchKeyword } = await req.json();
+    const { userMessage } = await req.json();
 
     if (!userMessage) {
       return new Response(
-        JSON.stringify({ status: "FAULT", error: "Missing required payload: 'userMessage'" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          status: "FAULT",
+          error: "Missing required payload: userMessage",
+        }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
       );
     }
 
-    // Step 1: Query historical baseline parameters
-    let historicalMemories = [];
-    if (searchKeyword) {
-      const { data } = await utils.searchMemories(searchKeyword);
-      historicalMemories = data || [];
-    } else {
-      const { data } = await utils.getTopMemories(5);
-      historicalMemories = data || [];
-    }
-
-    // Step 2: Assemble prompt instructions
-    const compiledSystemPrompt = utils.buildSystemPrompt(
-      worldviewContext || "The terminal local power reserves are volatile.",
-      historicalMemories
-    );
-
-    const messageHistory = [
-      { role: "system", content: compiledSystemPrompt },
-      { role: "user", content: userMessage }
+    const messages = [
+      {
+        role: "system",
+        content: STATIC_CORE_PROMPT,
+      },
+      {
+        role: "user",
+        content: userMessage,
+      },
     ];
 
-    // Step 3: Compute generation request to Groq gateway
-    const responsePayload = await utils.getResponseFromGroq(messageHistory);
+    const reply = await utils.getResponseFromGroq(messages);
 
     return new Response(
       JSON.stringify({
         status: "NODE #1 ONLINE",
-        reply: responsePayload
+        reply,
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      }
     );
-
   } catch (error) {
     return new Response(
-      JSON.stringify({ status: "CORE RUNTIME FAULT", error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        status: "CORE RUNTIME FAULT",
+        error: error.message,
+      }),
+      {
+        status: 500,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+      }
     );
   }
 }
