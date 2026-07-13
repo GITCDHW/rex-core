@@ -35,29 +35,45 @@ export default async function handler(req) {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  try {const audio = formData.get("audio");
+  try {
+    // FIX: Parse the incoming request body as FormData
+    const formData = await req.formData();
+    const audio = formData.get("audio");
 
-  const text = await transcribeAudio(audio);
+    if (!audio) {
+      return new Response(
+        JSON.stringify({ error: "Missing 'audio' file in form data." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-  const reply = await getResponseFromGroq([
-    {
-      role: "system",
-      content: REX_PROMPT,
-    },
-    {
-      role: "user",
-      content: text,
-    },
-  ]);
+    // Assuming these utilities are exported from "./utils.js"
+    const text = await utils.transcribeAudio(audio);
+    const reply = await utils.getResponseFromGroq([
+      {
+        role: "system",
+        content: REX_PROMPT,
+      },
+      {
+        role: "user",
+        content: text,
+      },
+    ]);
 
-  return Response.json({
-    transcript: text,
-    response: reply,
-  });
+    return Response.json(
+      {
+        transcript: text,
+        response: reply,
+      },
+      {
+        headers: corsHeaders,
+      }
+    );
     
   } catch (error) {
     return new Response(
