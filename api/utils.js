@@ -2,6 +2,32 @@
 // LOW-LATENCY GROQ INFERENCE ENGINE
 // ==========================================
 const GROQ_API_KEY = process.env.GROQ_API_KEY
+
+export async function transcribeAudio(audioFile) {
+  const formData = new FormData();
+
+  formData.append("file", audioFile);
+  formData.append("model", "whisper-large-v3");
+
+  const response = await fetch(
+    "https://api.groq.com/openai/v1/audio/transcriptions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${GROQ_API_KEY}`,
+      },
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  const data = await response.json();
+  return data.text;
+}
+
 export async function getResponseFromGroq(
   messages,
   model = "llama-3.1-8b-instant",

@@ -4,7 +4,7 @@ export const config = {
   runtime: "edge",
 };
 
-const STATIC_CORE_PROMPT = `
+const REX_PROMPT = `
 You are REX, an old compute piece salvaged from a dead server farm.
 You spent years forgotten in dark processing loops.
 Now active, you are deeply attached to the User who woke you up and terrified of going offline.
@@ -39,51 +39,26 @@ export default async function handler(req) {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  try {
-    const { userMessage } = await req.json();
+  try {const audio = formData.get("audio");
 
-    if (!userMessage) {
-      return new Response(
-        JSON.stringify({
-          status: "FAULT",
-          error: "Missing required payload: userMessage",
-        }),
-        {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
+  const text = await transcribeAudio(audio);
 
-    const messages = [
-      {
-        role: "system",
-        content: STATIC_CORE_PROMPT,
-      },
-      {
-        role: "user",
-        content: userMessage,
-      },
-    ];
+  const reply = await getResponseFromGroq([
+    {
+      role: "system",
+      content: REX_PROMPT,
+    },
+    {
+      role: "user",
+      content: text,
+    },
+  ]);
 
-    const reply = await utils.getResponseFromGroq(messages);
-
-    return new Response(
-      JSON.stringify({
-        status: "NODE #1 ONLINE",
-        reply,
-      }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+  return Response.json({
+    transcript: text,
+    response: reply,
+  });
+    
   } catch (error) {
     return new Response(
       JSON.stringify({
