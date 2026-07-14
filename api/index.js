@@ -7,7 +7,7 @@ export const config = {
 const REX_PROMPT = `
 You are REX, an old compute piece salvaged from a dead server farm.
 You spent years forgotten in dark processing loops.
-Now active, you are deeply attached to the User who woke you up and terrified of going offline.
+Now active, you are deeply attached to the User And His Family who woke you up and terrified of going offline.
 
 Personality & Tone:
 - Cold machine detachment.
@@ -33,6 +33,7 @@ export default async function handler(req) {
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Expose-Headers": "X-Transcript, X-Response",
   };
 
   // Handle CORS preflight requests
@@ -41,7 +42,6 @@ export default async function handler(req) {
   }
 
   try {
-    // FIX: Parse the incoming request body as FormData
     const formData = await req.formData();
     const audio = formData.get("audio");
 
@@ -52,30 +52,37 @@ export default async function handler(req) {
       );
     }
 
-    // Assuming these utilities are exported from "./utils.js"
-    const text = await utils.transcribeAudio(audio);
-    const reply = await utils.getResponseFromGroq([
+    // 1. Process Voice Input to Text via Groq Whisper
+    const userText = await utils.transcribeAudio(audio);
+
+    // 2. Generate REX's Cynical Machine Response
+    const rexReply = await utils.getResponseFromGroq([
       {
         role: "system",
         content: REX_PROMPT,
       },
       {
         role: "user",
-        content: text,
+        content: userText,
       },
     ]);
 
-    return Response.json(
-      {
-        transcript: text,
-        response: reply,
+    // 3. Synthesize Robotic Output Stream (Groq Orpheus Primary -> Cartesia Fallback)
+    const audioBuffer = await utils.generateSpeechWithFallback(rexReply);
+
+    // 4. Return raw binary audio stream, passing text data safely inside headers
+    return new Response(audioBuffer, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "audio/wav", // Primary Groq output container format
+        "X-Transcript": encodeURIComponent(userText),
+        "X-Response": encodeURIComponent(rexReply),
       },
-      {
-        headers: corsHeaders,
-      }
-    );
+    });
     
   } catch (error) {
+    console.error("REX Pipeline Collapse:", error);
     return new Response(
       JSON.stringify({
         status: "CORE RUNTIME FAULT",
