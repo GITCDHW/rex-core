@@ -2,7 +2,7 @@
 // LOW-LATENCY GROQ INFERENCE ENGINE
 // ==========================================
 const GROQ_API_KEY = process.env.GROQ_API_KEY
-
+const CARTESIA_API_KEY = process.env.CARTESIA_API_KEY
 export async function transcribeAudio(audioFile) {
   const formData = new FormData();
 
