@@ -1,0 +1,288 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #000;
+  overflow: hidden;
+  position: fixed;
+  font-family: 'Cinzel', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, serif;
+}
+
+/* Default Landscape layout */
+#game-stage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  overflow: hidden;
+}
+
+/* Forced Landscape inside Portrait Viewport */
+@media screen and (orientation: portrait), screen and (max-aspect-ratio: 1/1) {
+  #game-stage {
+    width: 100vh;
+    height: 100vw;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center center;
+  }
+}
+
+/* Video: fit complete 16:9 canvas without cropping */
+.stage-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Prevents zoomed/cropped edges */
+  opacity: 0;
+  transition: opacity 0.35s ease-in-out;
+}
+
+.stage-video.active {
+  opacity: 1;
+  z-index: 1;
+}
+
+#vignette {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  z-index: 2;
+}
+
+#choice-container {
+  position: absolute;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  width: 80%;
+  max-width: 600px;
+}
+
+#choice-container.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#timer-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#timer-fill {
+  height: 100%;
+  width: 100%;
+  background: #e5a93c;
+  transform-origin: left;
+}
+
+#buttons-wrapper {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  width: 100%;
+}
+
+.choice-btn {
+  flex: 1;
+  background: rgba(12, 14, 20, 0.9);
+  border: 1px solid rgba(229, 169, 60, 0.6);
+  color: #f3efe6;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 4px;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.choice-btn:hover {
+  background: rgba(229, 169, 60, 0.25);
+  border-color: #ffd700;
+}
+
+#end-screen {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 24px 40px;
+  border: 1px solid #333;
+  border-radius: 8px;
+}
+
+#end-screen.hidden { display: none; }
+#end-title { font-size: 1.6rem; color: #fff; letter-spacing: 2px; }
+#end-subtitle { font-size: 0.95rem; color: #aaa; }
+
+#unmute-banner {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 5;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid #555;
+  color: #ddd;
+  padding: 6px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+#unmute-banner.hidden { opacity: 0; pointer-events: none; }
+
+#world-map {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: radial-gradient(circle at center, #1a1612 0%, #080706 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#world-map.hidden { display: none; }
+
+.map-overlay {
+  width: 90%;
+  max-width: 900px;
+  text-align: center;
+}
+
+.map-header {
+  font-size: 2rem;
+  letter-spacing: 4px;
+  color: #e5a93c;
+  margin-bottom: 4px;
+}
+
+.map-sub {
+  color: #887d70;
+  font-size: 0.9rem;
+  margin-bottom: 40px;
+  letter-spacing: 1px;
+}
+
+.map-canvas {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(229, 169, 60, 0.2);
+  border-radius: 8px;
+}
+
+.map-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  z-index: 2;
+  transition: transform 0.2s ease;
+}
+
+.map-node:hover { transform: scale(1.08); }
+
+.node-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #15171c;
+  border: 2px solid #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  box-shadow: 0 0 15px rgba(0,0,0,0.8);
+  transition: all 0.3s ease;
+}
+
+.map-node.unlocked .node-icon {
+  border-color: #e5a93c;
+  box-shadow: 0 0 20px rgba(229, 169, 60, 0.3);
+}
+
+.map-node.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.map-node.locked:hover { transform: none; }
+
+.node-label {
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  color: #f3efe6;
+  max-width: 140px;
+}
+
+.node-connector {
+  position: absolute;
+  height: 2px;
+  background: rgba(229, 169, 60, 0.3);
+  z-index: 1;
+}
+#video-overlay-text {
+  position: absolute;
+  top: 50%;
+  right: 2rem; /* Anchored to the side in landscape orientation */
+  transform: translateY(-50%) rotate(90deg);
+  transform-origin: center center;
+
+  /* Subtle guide typography */
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6); /* Lighter, semi-translucent */
+  
+  /* Minimal shadow so it doesn't look bulky */
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 20;
+
+  transition: opacity 0.4s ease;
+}
+
+#video-overlay-text.hidden {
+  opacity: 0;
+}

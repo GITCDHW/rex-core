@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Blade of Ren</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game-stage">
+    <video id="video-a" class="stage-video active" playsinline muted></video>
+    <video id="video-b" class="stage-video" playsinline muted></video>
+
+    <div id="vignette"></div>
+
+    <div id="choice-container">
+      <div id="timer-bar"><div id="timer-fill"></div></div>
+      <div id="buttons-wrapper"></div>
+    </div>
+
+    <div id="end-screen" class="hidden">
+      <h1 id="end-title"></h1>
+      <p id="end-subtitle"></p>
+      <button class="choice-btn" onclick="game.start('node1')">Play Again</button>
+    </div>
+
+    <div id="unmute-banner" onclick="game.unmute()">
+      <span>🔊 Tap to Enable Audio</span>
+    </div>
+  </div>
+  <div id="video-overlay-text" class="hidden"></div>
+  <script src="script.js"></script>
+</body>
+</html>

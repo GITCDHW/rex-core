@@ -1,0 +1,56 @@
+{
+ "intro": {
+    "title": "INTRODUCTION",
+    "src": "assets/intro.mp4",
+    "choices": []
+  },
+  "node1": {
+    "title": "The Gate of Blossoms",
+    "src": "assets/node_1.mp4",
+    "choices": [
+      { "text": "Shadow Path through Inner Shrine", "target": "node2" },
+      { "text": "Cross the Torch-lit Bridge", "target": "node3" }
+    ]
+  },
+  "node2": {
+    "title": "Infiltration via Shadows",
+    "src": "assets/c1_n1.mp4",
+    "choices": [
+      { "text": "Silent Assassination", "target": "node4" },
+      { "text": "Flash Powder Diversion", "target": "node5" }
+    ]
+  },
+  "node3": {
+    "title": "The Guardian Duel",
+    "src": "assets/c2_n1.mp4",
+    "choices": [
+      { "text": "Iaijutsu Quick-Draw Strike", "target": "node6" },
+      { "text": "Defensive Posture Parry", "target": "node7" }
+    ]
+  },
+  "node4": {
+    "title": "The Ghost of the Temple (Win)",
+    "src": "assets/c1_n2.mp4",
+    "choices": []
+  },
+  "cutscene1":{
+    "title": "Ren Dissapears",
+    "src": "assets/c1_n4.mp4",
+    "choices": []
+  },
+  "node5": {
+    "title": "The Encircled Courtyard (Fail)",
+    "src": "assets/c1_n3.mp4",
+    "choices": []
+  },
+  "node6": {
+    "title": "Master of the Fast Blade (Win)",
+    "src": "assets/c2_n2.mp4",
+    "choices": []
+  },
+  "node7": {
+    "title": "Shattered Steel (Fail)",
+    "src": "assets/c2_n3.mp4",
+    "choices": []
+  }
+}
