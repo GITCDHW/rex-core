@@ -102,22 +102,48 @@ class FMVPlayer {
   }
 
   playNode(nodeId, immediate = false) {
-    const node = storyTree[nodeId];
-    if (!node) return;
+  const node = storyTree[nodeId];
+  if (!node) return;
 
-    this.currentNode = node;
-    this.choiceDisplayed = false;
-    this.hideChoices();
+  this.currentNode = node;
+  this.choiceDisplayed = false;
+  this.hideChoices();
 
-    // Display or hide node overlay text
-    if (this.overlayText) {
-      if (node.overlay) {
-        this.overlayText.textContent = node.overlay;
-        this.overlayText.classList.remove("hidden");
-      } else {
-        this.overlayText.classList.add("hidden");
-      }
+  if (this.overlayText) {
+    if (node.overlay) {
+      this.overlayText.textContent = node.overlay;
+      this.overlayText.classList.remove("hidden");
+    } else {
+      this.overlayText.classList.add("hidden");
     }
+  }
+
+  const active = immediate ? this.currentVideo : this.standbyVideo;
+  const inactive = immediate ? this.standbyVideo : this.currentVideo;
+
+  // 1. Immediately pause and decouple the outgoing video
+  inactive.pause();
+  inactive.classList.remove("active");
+
+  // 2. Commit the active reference before starting playback
+  this.currentVideo = active;
+  this.standbyVideo = inactive;
+
+  // 3. Configure and start the target video
+  active.playbackRate = 1.0;
+  active.src = node.src;
+  active.load();
+
+  active.play().then(() => {
+    active.classList.add("active");
+    this.preloadUpcomingBranches(node);
+  }).catch(err => {
+    console.warn("Autoplay muted fallback triggered:", err);
+    active.muted = true;
+    active.play().then(() => active.classList.add("active"));
+  });
+}
+
 
     const active = immediate ? this.currentVideo : this.standbyVideo;
     const inactive = immediate ? this.standbyVideo : this.currentVideo;
