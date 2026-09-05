@@ -79,8 +79,6 @@ class FMVPlayer {
     this.endScreen = document.getElementById("end-screen");
     this.endTitle = document.getElementById("end-title");
     this.endSubtitle = document.getElementById("end-subtitle");
-
-    // Reference to the overlay text DOM element
     this.overlayText = document.getElementById("video-overlay-text");
 
     this.currentNode = null;
@@ -102,70 +100,50 @@ class FMVPlayer {
   }
 
   playNode(nodeId, immediate = false) {
-  const node = storyTree[nodeId];
-  if (!node) return;
+    const node = storyTree[nodeId];
+    if (!node) return;
 
-  this.currentNode = node;
-  this.choiceDisplayed = false;
-  this.hideChoices();
+    this.currentNode = node;
+    this.choiceDisplayed = false;
+    this.hideChoices();
 
-  if (this.overlayText) {
-    if (node.overlay) {
-      this.overlayText.textContent = node.overlay;
-      this.overlayText.classList.remove("hidden");
-    } else {
-      this.overlayText.classList.add("hidden");
+    if (this.overlayText) {
+      if (node.overlay) {
+        this.overlayText.textContent = node.overlay;
+        this.overlayText.classList.remove("hidden");
+      } else {
+        this.overlayText.classList.add("hidden");
+      }
     }
-  }
-
-  const active = immediate ? this.currentVideo : this.standbyVideo;
-  const inactive = immediate ? this.standbyVideo : this.currentVideo;
-
-  // 1. Immediately pause and decouple the outgoing video
-  inactive.pause();
-  inactive.classList.remove("active");
-
-  // 2. Commit the active reference before starting playback
-  this.currentVideo = active;
-  this.standbyVideo = inactive;
-
-  // 3. Configure and start the target video
-  active.playbackRate = 1.0;
-  active.src = node.src;
-  active.load();
-
-  active.play().then(() => {
-    active.classList.add("active");
-    this.preloadUpcomingBranches(node);
-  }).catch(err => {
-    console.warn("Autoplay muted fallback triggered:", err);
-    active.muted = true;
-    active.play().then(() => active.classList.add("active"));
-  });
-}
-
 
     const active = immediate ? this.currentVideo : this.standbyVideo;
     const inactive = immediate ? this.standbyVideo : this.currentVideo;
 
-    // Reset playback rate back to standard speed
+    inactive.pause();
+    inactive.classList.remove("active");
+
+    this.currentVideo = active;
+    this.standbyVideo = inactive;
+
     active.playbackRate = 1.0;
     active.src = node.src;
     active.load();
 
-    active.play().then(() => {
-      active.classList.add("active");
-      inactive.classList.remove("active");
-
-      this.currentVideo = active;
-      this.standbyVideo = inactive;
-
-      this.preloadUpcomingBranches(node);
-    }).catch(err => {
-      console.warn("Autoplay muted fallback triggered:", err);
-      active.muted = true;
-      active.play();
-    });
+    const playPromise = active.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          active.classList.add("active");
+          this.preloadUpcomingBranches(node);
+        })
+        .catch(err => {
+          console.warn("Autoplay blocked. Attempting muted fallback:", err);
+          active.muted = true;
+          active.play()
+            .then(() => active.classList.add("active"))
+            .catch(playErr => console.error("Playback failed completely:", playErr));
+        });
+    }
   }
 
   handleTimeUpdate(video) {
@@ -175,18 +153,15 @@ class FMVPlayer {
 
     const remaining = video.duration - video.currentTime;
 
-    // Trigger choices when entering the decision window
     if (remaining <= this.choiceWindowSec && !this.choiceDisplayed) {
       this.displayChoices(this.currentNode.choices);
     }
 
-    // Progressively ramp down playback rate from 1.0 to 0.2
     if (remaining <= this.choiceWindowSec && remaining > 0.15) {
       const progress = remaining / this.choiceWindowSec;
-      video.playbackRate = Math.max(0.2, 0.2 + (0.8 * progress));
+      video.playbackRate = Math.max(0.2, 0.2 + 0.8 * progress);
     }
 
-    // Freeze video at the end frame until player clicks an option
     if (remaining <= 0.15) {
       video.pause();
       video.currentTime = Math.max(0, video.duration - 0.05);
@@ -198,7 +173,6 @@ class FMVPlayer {
     this.choiceDisplayed = true;
     this.btnWrapper.innerHTML = "";
 
-    // Clear overlay text when choice buttons appear
     if (this.overlayText) {
       this.overlayText.classList.add("hidden");
     }
@@ -226,24 +200,20 @@ class FMVPlayer {
   handleVideoEnd(video) {
     if (video !== this.currentVideo) return;
 
-    // Clear overlay on video end
     if (this.overlayText) {
       this.overlayText.classList.add("hidden");
     }
 
-    // Do nothing if choices are active - keep awaiting player interaction
     if (this.currentNode.choices && this.currentNode.choices.length > 0) {
       video.pause();
       return;
     }
 
-    // Automatic transition (e.g., intro to node1)
     if (this.currentNode.next) {
       this.playNode(this.currentNode.next);
       return;
     }
 
-    // Terminal outcome
     if (this.currentNode.isEnding) {
       this.showEnding(this.currentNode);
     }
@@ -283,12 +253,15 @@ class FMVPlayer {
   }
 
   unmute() {
-    this.currentVideo.muted = false;
-    this.standbyVideo.muted = false;
+    this.videoA.muted = false;
+    this.videoB.muted = false;
     const banner = document.getElementById("unmute-banner");
     if (banner) banner.classList.add("hidden");
   }
 }
 
-const game = new FMVPlayer();
-window.addEventListener("DOMContentLoaded", () => game.start("intro"));
+// Ensure elements exist and instantiate safely
+window.addEventListener("DOMContentLoaded", () => {
+  const game = new FMVPlayer();
+  game.start("intro");
+});
