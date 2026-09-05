@@ -80,13 +80,19 @@ class FMVPlayer {
     this.endTitle = document.getElementById("end-title");
     this.endSubtitle = document.getElementById("end-subtitle");
     this.overlayText = document.getElementById("video-overlay-text");
+    this.unmuteBanner = document.getElementById("unmute-banner");
 
     this.currentNode = null;
     this.choiceDisplayed = false;
     this.choiceWindowSec = 2.5;
+    this.isMuted = false;
 
     this.bindEvents(this.videoA);
     this.bindEvents(this.videoB);
+
+    if (this.unmuteBanner) {
+      this.unmuteBanner.addEventListener("click", () => this.unmute());
+    }
   }
 
   bindEvents(video) {
@@ -96,6 +102,9 @@ class FMVPlayer {
 
   start(nodeId = "intro") {
     if (this.endScreen) this.endScreen.classList.add("hidden");
+    
+    // Explicitly un-mute on initial user click
+    this.unmute();
     this.playNode(nodeId, true);
   }
 
@@ -126,6 +135,7 @@ class FMVPlayer {
     this.standbyVideo = inactive;
 
     active.playbackRate = 1.0;
+    active.muted = this.isMuted;
     active.src = node.src;
     active.load();
 
@@ -137,11 +147,14 @@ class FMVPlayer {
           this.preloadUpcomingBranches(node);
         })
         .catch(err => {
-          console.warn("Autoplay blocked. Attempting muted fallback:", err);
+          console.warn("Autoplay with audio blocked. Falling back to muted mode:", err);
+          this.isMuted = true;
           active.muted = true;
+          if (this.unmuteBanner) this.unmuteBanner.classList.remove("hidden");
+
           active.play()
             .then(() => active.classList.add("active"))
-            .catch(playErr => console.error("Playback failed completely:", playErr));
+            .catch(playErr => console.error("Video playback completely failed:", playErr));
         });
     }
   }
@@ -153,15 +166,18 @@ class FMVPlayer {
 
     const remaining = video.duration - video.currentTime;
 
+    // Trigger choices when entering the decision window
     if (remaining <= this.choiceWindowSec && !this.choiceDisplayed) {
       this.displayChoices(this.currentNode.choices);
     }
 
+    // Progressively ramp down playback rate from 1.0 to 0.2
     if (remaining <= this.choiceWindowSec && remaining > 0.15) {
       const progress = remaining / this.choiceWindowSec;
-      video.playbackRate = Math.max(0.2, 0.2 + 0.8 * progress);
+      video.playbackRate = Math.max(0.2, 0.2 + (0.8 * progress));
     }
 
+    // Freeze video at the end frame until player clicks an option
     if (remaining <= 0.15) {
       video.pause();
       video.currentTime = Math.max(0, video.duration - 0.05);
@@ -182,6 +198,8 @@ class FMVPlayer {
       btn.className = "choice-btn";
       btn.textContent = c.text;
       btn.onclick = () => {
+        // Choice selection qualifies as a user gesture: restore audio if blocked earlier
+        this.unmute();
         this.currentVideo.playbackRate = 1.0;
         this.hideChoices();
         this.playNode(c.target);
@@ -253,15 +271,33 @@ class FMVPlayer {
   }
 
   unmute() {
+    this.isMuted = false;
     this.videoA.muted = false;
     this.videoB.muted = false;
-    const banner = document.getElementById("unmute-banner");
-    if (banner) banner.classList.add("hidden");
+    if (this.unmuteBanner) {
+      this.unmuteBanner.classList.add("hidden");
+    }
   }
 }
 
-// Ensure elements exist and instantiate safely
+// Global start listener with explicit user interaction handler
 window.addEventListener("DOMContentLoaded", () => {
   const game = new FMVPlayer();
-  game.start("intro");
+  const startBtn = document.getElementById("start-btn");
+  const startScreen = document.getElementById("start-screen");
+
+  if (startBtn) {
+    startBtn.addEventListener("click", () => {
+      if (startScreen) startScreen.classList.add("hidden");
+      game.start("intro");
+    });
+  } else {
+    // If no start button is present, bind a one-time click anywhere to unlock audio
+    const unlockAudio = () => {
+      game.unmute();
+      window.removeEventListener("pointerdown", unlockAudio);
+    };
+    window.addEventListener("pointerdown", unlockAudio);
+    game.start("intro");
+  }
 });
